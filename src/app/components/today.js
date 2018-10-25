@@ -26,6 +26,12 @@ export default class Today extends Component {
 
   componentDidMount () {
     console.log('Now invoking another call every 10 seconds!');
+    if(!navigator.onLine) {
+      this.setState({ btcprice: JSON.parse(localStorage.getItem('BTC')) });
+      this.setState({ ethprice: JSON.parse(localStorage.getItem('ETC')) });
+      this.setState({ ltcprice: JSON.parse(localStorage.getItem('LTC')) });
+      this.setState({ refreshTime: JSON.parse(localStorage.getItem('reftreshtime')) });
+    }
     setInterval(() => {
       axios.get('https://min-api.cryptocompare.com/data/pricemulti?fsyms=BTC,ETH,LTC&tsyms=USD')
         .then(response => {
@@ -35,11 +41,8 @@ export default class Today extends Component {
           console.log(error)
         })
     }, 10000);
-    this.prices.bind('coin-prices', price => {
-      console.log('Updated at', this.getCurrentTime());
-      this.setState({ btcprice: price.prices.BTC.USD });
-      this.setState({ ethprice: price.prices.ETH.USD });
-      this.setState({ ltcprice: price.prices.LTC.USD, refreshTime: this.getCurrentTime() });
+    this.prices.bind('prices', price => {
+      this.updateData(this.getCurrentTime(), price.prices.BTC.USD, price.prices.ETH.USD, price.prices.LTC.USD);
     }, this);
   }
 
@@ -51,10 +54,7 @@ export default class Today extends Component {
 
     axios.get(this.state.remote_url)
       .then(response => {
-        this.setState({ btcprice: response.data.BTC.USD });
-        this.setState({ ethprice: response.data.ETH.USD });
-        this.setState({ ltcprice: response.data.LTC.USD });
-        this.setState({ isLoading: false, refreshTime: this.getCurrentTime()});
+        this.updateData(this.getCurrentTime(), response.data.BTC.USD, response.data.ETH.USD, response.data.LTC.USD);
       }).catch(error => {
         console.log(error);
       });
@@ -68,6 +68,20 @@ export default class Today extends Component {
     var minutes = date.getMinutes();
     var hour = date.getHours();
     return `${hour}:${minutes}:${seconds}`;
+  }
+
+  updateData = (time, btcprice, ethprice, ltcprice) => {
+    this.setState({ btcprice: btcprice });
+    localStorage.setItem('BTC', JSON.stringify(btcprice));
+    
+    this.setState({ ethprice: ethprice });
+    localStorage.setItem('ETC', JSON.stringify(ethprice));
+    
+    this.setState({ ltcprice: ltcprice });
+    localStorage.setItem('LTC', JSON.stringify(ltcprice));
+    
+    this.setState({ isLoading: false, refreshTime: time });
+    localStorage.setItem('reftreshtime', JSON.stringify(time));
   }
 
   render() {
